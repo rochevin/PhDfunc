@@ -1,0 +1,385 @@
+---
+title: "Differential Expression report using edgeR"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: flatly
+    orientation: rows
+    vertical_layout: fill
+    dev: 'svg'
+params:
+    pval.cutoff: 0.1
+    FC.cutoff: 1
+    metadata: "/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_ON_GENE/results/DE/RNA-SEQ_DIVA_LEGUBE/autoReport/metadata.tsv"
+    exp: "DIvA"
+    DE.1: "pOHT"
+    DE.2: "mOHT"
+    experiment: "RNA-Seq genes counts on DiVA cells before and after breaks"
+    gene.list: "/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_ON_GENE/data/biomart_export_gene_id_name.txt"
+    out : "/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_ON_GENE/results/DE/DE_test_diff_seuils/"
+    
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(htmltools)
+require(edgeR)
+require(tidyverse)
+require(HTSFilter)
+require(DT)
+require(ggplot2)
+```
+
+```{r include=FALSE}
+metaData <- read_tsv(params$metadata)
+
+files <- metaData %>% pull(files)
+
+Conditions <- metaData %>% pull(Cond)
+SampleGroup <- Conditions %>% as_factor()
+replicates <- metaData %>% pull(replicates)
+labels <- metaData %>% pull(labels)
+p.cutoff <- params$pval.cutoff
+LogFC.cutoff <- params$FC.cutoff
+DG <- readDGE(files,header= FALSE,group = SampleGroup,labels =labels)
+```
+
+Summary
+=====================================
+
+Row {data-height=400}
+-----------------------------------------------------------------------
+
+
+### Experiment informations
+
+- **Date:** `r Sys.Date()`
+- **R packages:** 
+    - Report generated with the R package edgeR version `r packageDescription("edgeR")$Version`
+    - Using R package tidyverse version `r packageDescription("tidyverse")$Version` for data.frame manipulation
+    - Using R package DT version `r packageDescription("DT")$Version` for data.frame output
+- **Experiment description:** `r params$experiment`
+- **MetaData :** `r params$metadata`
+- **Threshold :**
+    - $Log2FC \geq `r LogFC.cutoff`$
+    - $padj < `r p.cutoff`$
+- **Gene list used :** `r params$gene.list`
+- **Comparison :** `r params$DE.1` vs `r params$DE.2`
+
+
+Row {data-height=150}
+-----------------------------------------------------------------------
+
+
+### Samples
+
+```{r}
+valueBox(DG$samples %>% length, icon = "fa-file-excel-o",color = "info")
+```
+
+### Conditions
+
+```{r}
+valueBox(SampleGroup %>% length(), icon = "fa-flask",color = "info")
+```
+
+### Replicates
+
+```{r}
+valueBox(replicates %>% unique() %>% length(), icon = "fa-flask",color = "info")
+```
+
+### Features
+
+```{r}
+valueBox(DG %>% nrow(), icon = "fa-bars",color = "info")
+```
+
+
+
+
+Row {data-height=600}
+-----------------------------------------------------------------------
+
+
+### Summary
+   
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+DG$samples %>%datatable(style="bootstrap",class=c('compact', 'cell-border'),options = list(scrollX=T,dom='t')) %>% 
+    formatStyle(
+    c('group'),
+    target = 'row',
+    color = "white",
+    backgroundColor = styleEqual(
+      SampleGroup, scales::hue_pal()(length(SampleGroup))
+    )
+)
+```
+
+
+
+Filter counts
+=====================================
+
+Row {data-height=1000}
+-----------------------------------------------------------------------
+
+### HTSfilter
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+filter <- HTSFilter(DG$counts,DG$samples$group,plot=T)
+```
+
+
+Row {data-height=100}
+-----------------------------------------------------------------------
+
+### removedData
+
+```{r}
+valueBox(nrow(filter$removedData), icon = "fa-bars",color = "danger")
+```
+
+
+### filteredData
+
+```{r}
+valueBox(nrow(filter$filteredData), icon = "fa-bars",color = "danger")
+```
+
+
+
+Plot data
+=====================================
+
+```{r include=FALSE}
+DG$counts <- filter$filteredData
+DG <- calcNormFactors(DG, method="TMM")
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+###MDS plots
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+plotMDS(DG,gene.selection="common")
+```
+
+###heatmap
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+cpm_log <- cpm(DG, log = TRUE)
+heatmap(cor(cpm_log))
+```
+
+###Scatterplot
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+possibility <- combn(colnames(DG$counts),2)
+counts <- lapply(1:ncol(possibility),function(i){
+    x <- possibility[,i]
+    hi <- (DG$counts/DG$samples$norm.factors) %>% .[,x] %>% as.data.frame() %>% mutate(Condition = paste(x,collapse=" vs "))
+    colnames(hi) <- c("Sample_1","Sample_2","Test")
+    hi
+}) %>% bind_rows()
+myColor <- rev(RColorBrewer::brewer.pal(11, "Spectral"))
+p <- counts %>% ggplot(aes(x=Sample_1,y=Sample_2)) + geom_bin2d(bins=100) + facet_wrap(~Test) + scale_fill_gradientn(colours = myColor) + theme_minimal(base_size = 8) + scale_y_log10() + scale_x_log10()
+p
+```
+
+
+###Variance explained
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+pca <- prcomp(t(DG$counts/DG$samples$norm.factors), scale. = TRUE)
+
+
+percent_var_explained <- (pca$sdev^2 / sum(pca$sdev^2))*100
+# Préparation d'un tableau avec le numéro des composantes principales 
+# et le pourcentage de variance qui lui est associé
+percent_var_explained <- data.frame(
+    PC=1:length(percent_var_explained),
+    percent_Var=percent_var_explained
+)
+# Récupérer uniquement le nombre de PC indiqué en argument
+sub_percent_var_explained <- percent_var_explained[1:8,]
+# Génère le graphique
+p <- ggplot(sub_percent_var_explained, aes(x=PC, y=percent_Var)) + 
+    # Génère un barplot
+    geom_col()+
+    # Utilise le thème "black and white"
+    theme_classic() +
+    # Renomme l'axe des abscisses
+    xlab("PCs") +
+    # Renomme l'axe des ordonnées
+    ylab("% Variance") +
+    # Titre du graphique
+    ggtitle("Screeplot")+
+    # Option de taille des éléments textuels
+    theme(
+        axis.text=element_text(size=16),
+        axis.title=element_text(size=16),
+        legend.text = element_text(size =16),
+        legend.title = element_text(size =16 ,face="bold"),
+        plot.title = element_text(size=18, face="bold", hjust = 0.5),
+        # Astuce pour garder un graphique carré
+        aspect.ratio=1
+    )
+# Affiche le graphique
+p
+
+```
+
+###PCA
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+
+dat.plot <- pca$x %>% as.data.frame %>%tibble::rownames_to_column()
+
+p <- ggplot(dat.plot,aes(x=PC1,y=PC2,label=rowname)) + geom_text() + theme_classic()
+p
+```
+
+
+Model
+=====================================
+
+```{r include=FALSE}
+designMat <- model.matrix(~0+group,data=DG$samples)
+colnames(designMat) <- levels(DG$samples$group)
+
+DG <- estimateGLMCommonDisp(DG, design=designMat)
+DG <- estimateGLMTrendedDisp(DG, design=designMat)
+DG <- estimateGLMTagwiseDisp(DG, design=designMat)
+```
+
+Row
+-----------------------------------------------------------------------
+
+###Design Matrix
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+designMat
+```
+
+###BCV
+
+```{r,echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
+plotBCV(DG)
+```
+
+
+Differential Expression
+=====================================
+
+Row
+-----------------------------------------------------------------------
+
+###Make Contrast
+
+```{r, echo=FALSE}
+fit <- glmFit(DG, designMat)
+my.contrasts <- makeContrasts(contrasts=paste(params$DE.1, params$DE.2, sep="-"), levels=designMat )
+my.contrasts
+```
+
+Row  {.tabset .tabset-fade data-height=1500}
+-----------------------------------------------------------------------
+
+### Resume
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+genes.att <- read.delim("/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_ON_GENE/data/biomart_export_gene_id_name.txt",sep="\t",h=T)
+
+lrt <- glmLRT(fit, contrast=my.contrasts)
+
+table.counts <- lrt$table %>% 
+        tibble::rownames_to_column() %>%
+        mutate(p.adj=p.adjust(PValue,method="BH")) %>% 
+        mutate(FILTER.FC = ifelse(abs(logFC)>=LogFC.cutoff,1,0)) %>%
+        mutate(FILTER.P = ifelse(p.adj<p.cutoff,1,0)) %>%
+        dplyr::left_join(genes.att,by = c("rowname" = "Gene.stable.ID"))
+
+
+table.counts %>% group_by(FILTER.FC,FILTER.P) %>% summarise(count = dplyr::n(),mean.abs.FC = mean(abs(logFC))) %>%
+    datatable(style="bootstrap",class=c('compact', 'cell-border'),options = list(scrollX=T,dom='t')) %>% 
+    formatStyle(
+    c("FILTER.FC","FILTER.P"),
+    color = "white",
+    backgroundColor = styleEqual(
+      c(0,1), c('#e74c3c','#27ae60')
+    )
+)
+
+write_tsv(table.counts,paste0(params$out,paste("DE_result_edgeR",params$exp,LogFC.cutoff,p.cutoff,params$DE.1,params$DE.2,"table.tsv",sep="|")))
+```
+
+### Table
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+table.counts %>%
+    mutate(detection_call = ifelse(FILTER.P == 1 & FILTER.FC == 1,ifelse(logFC < LogFC.cutoff,"downregulated","upregulated"),"NS")) %>% filter(detection_call != "NS")  %>% dplyr::select(-FILTER.P,-FILTER.FC) %>%datatable(style="bootstrap",class=c('compact', 'cell-border'),filter = list(position = 'top', clear = FALSE),options = list(pageLength = 10,scrollX=T)) %>% 
+    formatStyle(
+    c('detection_call'),
+    target = 'row',
+    color = "white",
+    backgroundColor = styleEqual(
+      c("downregulated","upregulated"), c("#1465AC","#B31B21")
+    )
+)
+```
+
+### MA-plot
+
+```{r echo=FALSE, fig.height=12, fig.width=16, message=FALSE, warning=FALSE}
+cc <- table.counts %>%
+    mutate(detection_call = ifelse(FILTER.P == 1 & FILTER.FC == 1,ifelse(logFC < LogFC.cutoff,"downregulated","upregulated"),"NS")) %>%
+    mutate(detection_call = factor(detection_call,levels = c("upregulated","downregulated","NS")))
+lines.plot <- tibble(intercept = c(-LogFC.cutoff,0,LogFC.cutoff),linetype=c("treshold","0point","treshold"))
+
+plot.name <- cc %>% filter(detection_call != "NS") %>% group_by(detection_call) %>% top_n(-20,p.adj)
+
+effectif <- cc %>% count(detection_call) %>% mutate(legend = paste(detection_call,n,sep=": ")) %>% pull(legend)
+
+maxiFC <- max(cc$logFC,na.rm = T)
+
+p1 <- cc %>%
+    ggplot(aes( x= logCPM,y=logFC)) +
+    geom_point(aes(col=detection_call),size=1.2) +
+    scale_color_manual(labels = effectif,values =  c("#B31B21", "#1465AC", "darkgray")) +
+    theme_minimal(base_size = 18) +
+    geom_hline(data=lines.plot,aes(yintercept = intercept,linetype=linetype)) +
+    ggrepel::geom_label_repel(data = plot.name, 
+                              mapping = aes(label = Gene.name,col=detection_call), box.padding = unit(0.35, 
+                                                                              "lines"), point.padding = unit(0.3, "lines"), 
+                              force = 1, fontface = 14,alpha=0.7) +
+    guides(linetype=FALSE,col=guide_legend(title="Differentially Expressed :",title.theme=element_text(face="bold"))) +
+    theme(legend.position = "bottom") +
+    scale_y_continuous(breaks = c(-seq(1,maxiFC,by=1),seq(0,maxiFC,by=1)),limits = c(-maxiFC,maxiFC),labels=scales::trans_format("identity", function(x) round(x,2)))
+
+p1
+
+```
+
+### Volcano plot
+
+```{r,echo=FALSE, fig.height=12, fig.width=16, echo=FALSE, message=FALSE, warning=FALSE}
+
+p2 <- cc %>% ggplot(aes(y=-log10(p.adj),x=logFC)) +
+    geom_point(aes(col=detection_call),size=1.2) +
+    scale_color_manual(labels = effectif,values =  c("#B31B21", "#1465AC", "darkgray")) +
+    theme_minimal(base_size = 18) +
+    geom_vline(data=lines.plot,aes(xintercept = intercept,linetype=linetype)) +
+    geom_hline(yintercept = -log10(p.cutoff)) +
+    ggrepel::geom_label_repel(data = plot.name, 
+                              mapping = aes(label = Gene.name,col=detection_call), box.padding = unit(0.35, 
+                                                                                   "lines"), point.padding = unit(0.3, "lines"), 
+                              force = 1, fontface = 14,alpha=0.7) +
+    guides(linetype=FALSE,col=guide_legend(title="Differentially Expressed :",title.theme=element_text(face="bold"))) +
+    theme(legend.position = "bottom") +
+    scale_x_continuous(breaks = c(-seq(1,maxiFC,by=1),seq(0,maxiFC,by=1)),limits = c(-maxiFC,maxiFC),labels=scales::trans_format("identity", function(x) round(x,2)))
+
+p2
+```
+

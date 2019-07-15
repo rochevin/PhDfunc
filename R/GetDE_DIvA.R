@@ -19,7 +19,7 @@ GetDE_DIvA <- function(path = "/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_
                        Conditions = c("C1","C1_OHT"),
                        Labels = paste(Conditions,rep(c("1","2"),each=2),sep="_"),
                        p.cutoff = 0.1,
-                       LogFC.cutoff = 1,
+                       LogFC.cutoff = 0.5,
                        to.test = "CvsC_OHT"){
     require(magrittr)
     files <- list.files(path,pattern=pattern,full.names = T)

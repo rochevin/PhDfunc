@@ -189,6 +189,7 @@ GetBWList <- function(mydir = "/mnt/NAS/"){
             ,"BLESS_pOHT"="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/BLESS/CHIP-SEQ/Jun2015/PROCESSED/ALIGNED_PAIRED/WIGGLE/trimmed_BLESS_U2OSpTam.sorted_fragments_800bp_rmdups_normalized.bw"
     )
     if(mydir != "/mnt/NAS/"){
-        str_replace(wigs,"/mnt/NAS/",mydir)
+        wigs <- str_replace(wigs,"/mnt/NAS/",mydir)
     }
+    wigs
 }

@@ -1,4 +1,4 @@
-#' Title
+#' Get1val : Get the coverage of a RleList object for a list of genomic positions
 #'
 #' @param Name The name of the bigwig file
 #' @param one.w A bigwig file imported in RleList format (as = "RleList")

@@ -1,11 +1,13 @@
 #' Get List of all bigwig
 #'
+#' @param mydir "/mnt/NAS/"
+#'
 #' @return A list of existing BW
 #' @export
 #'
 #' @examples
-GetBWList <- function(){
-    list(
+GetBWList <- function(mydir = "/mnt/NAS/"){
+    wigs <- list(
             "ATACseqA_A_mOHT"="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/ATAC-Seq/Clouaire_HC3HCBGX9/PROCESSED/mapping/BIGWIG/HC3HCBGX9_ATACseqA_DIvA_18s005247-1-1_Clouaire_lane1ATACseqADIvA_normalized.bw"
             ,"ATACseqA_A_pOHT"                      ="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/ATAC-Seq/Clouaire_HC3HCBGX9/PROCESSED/mapping/BIGWIG/HC3HCBGX9_ATACseqA_DIvA_18s005247-1-1_Clouaire_lane1ATACseqAOHT_normalized.bw"
             ,"ATACseqA_A_pOHT24h"                   ="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/ATAC-Seq/Clouaire_HC3HCBGX9/PROCESSED/mapping/BIGWIG/HC3HCBGX9_ATACseqA_DIvA_18s005247-1-1_Clouaire_lane1ATACseqAOHT24h_normalized.bw"
@@ -186,4 +188,7 @@ GetBWList <- function(){
             ,"BLESS_mOHT"="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/BLESS/CHIP-SEQ/Jun2015/PROCESSED/ALIGNED_PAIRED/WIGGLE/trimmed_BLESS_U2OS-Tam.sorted_fragments_800bp_rmdups_normalized.bw"
             ,"BLESS_pOHT"="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/BLESS/CHIP-SEQ/Jun2015/PROCESSED/ALIGNED_PAIRED/WIGGLE/trimmed_BLESS_U2OSpTam.sorted_fragments_800bp_rmdups_normalized.bw"
     )
+    if(mydir != "/mnt/NAS/"){
+        str_replace(wigs,"/mnt/NAS/",mydir)
+    }
 }

@@ -9,7 +9,7 @@
   pattern = "_counts.tsv", exclude = NULL,
   Conditions = paste(rep("WT", 9), rep(c("ctr", "4Gy4h", "10Gy4h"), each
   = 3), sep = "_"), Labels = paste(Conditions, rep(c("1", "2", "3"), 3),
-  sep = "_"), p.cutoff = 0.1, LogFC.cutoff = 1,
+  sep = "_"), p.cutoff = 0.1, LogFC.cutoff = 0.5,
   to.test = "WT_Cvs4Gy")
 }
 \arguments{

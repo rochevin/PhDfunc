@@ -3,6 +3,7 @@
 export(Get1val)
 export(GetDE_DIvA)
 export(GetDE_IR_GSE110386)
+export(GetMotifFROMJASPAR)
 export(MakeFisherForVenn)
 export(compute1ValperPeak)
 export(computeProfile)

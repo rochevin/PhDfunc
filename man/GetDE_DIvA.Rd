@@ -8,7 +8,7 @@
   GetDE_DIvA(path = "/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_ON_GENE/data/DDR_Legube/PROCESSED_strand-spe-reverse_10102018/mapping/counts",
   pattern = "_counts.tsv", exclude = "STX", Conditions = c("C1",
   "C1_OHT"), Labels = paste(Conditions, rep(c("1", "2"), each = 2), sep =
-  "_"), p.cutoff = 0.1, LogFC.cutoff = 1, to.test = "CvsC_OHT")
+  "_"), p.cutoff = 0.1, LogFC.cutoff = 0.5, to.test = "CvsC_OHT")
 }
 \arguments{
 \item{path}{The path directory of table counts matrix (from HTSeq Count)}

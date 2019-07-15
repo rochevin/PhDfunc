@@ -1,3 +1,9 @@
+#' Get List of all bigwig
+#'
+#' @return A list of existing BW
+#' @export
+#'
+#' @examples
 GetBWList <- function(){
     list(
             "ATACseqA_A_mOHT"="/mnt/NAS/DATA/HIGH_THROUGHPUT_GENOMICS_DIvA/ATAC-Seq/Clouaire_HC3HCBGX9/PROCESSED/mapping/BIGWIG/HC3HCBGX9_ATACseqA_DIvA_18s005247-1-1_Clouaire_lane1ATACseqADIvA_normalized.bw"

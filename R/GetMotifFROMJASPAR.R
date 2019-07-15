@@ -1,4 +1,4 @@
-#' Title
+#' GetMotifFROMJASPAR : Search motifs within DNA promoter sequences
 #'
 #' @param bed_path A path which contains one or more bedfiles
 #' @param pattern extension, default ".bed"

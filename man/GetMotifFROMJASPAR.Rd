@@ -2,7 +2,7 @@
 % Please edit documentation in R/GetMotifFROMJASPAR.R
 \name{GetMotifFROMJASPAR}
 \alias{GetMotifFROMJASPAR}
-\title{Title}
+\title{GetMotifFROMJASPAR : Search motifs within DNA promoter sequences}
 \usage{
 
   GetMotifFROMJASPAR(bed_path = "/home/rochevin/Documents/PROJET_THESE/DSB_EFFECT_ON_GENE/results/COMMON_GDR_RESPONSE/BED",
@@ -30,5 +30,5 @@
 A data.frame of motif
 }
 \description{
-Title
+GetMotifFROMJASPAR : Search motifs within DNA promoter sequences
 }

@@ -14,6 +14,6 @@ Get1val <- function(Name,one.w,x){
         message(unique(as.character(seqnames(zz))))
         cov <- one.w[[unique(as.character(seqnames(zz)))]]
         score <- IRanges::Views( cov, start = start(zz), end = end(zz) ) %>% sum()
-        tidyr::tibble(wig = Name,value = score,rowname = zz$name)
+        tibble::tibble(wig = Name,value = score,rowname = zz$name)
     }) %>% bind_rows()
 }

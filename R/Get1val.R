@@ -13,7 +13,7 @@ Get1val <- function(Name,one.w,x){
     lapply(split(x,droplevels(seqnames(x))),function(zz){
         message(unique(as.character(seqnames(zz))))
         cov <- one.w[[unique(as.character(seqnames(zz)))]]
-        score <- rtracklayer::Views( cov, start = start(zz), end = end(zz) ) %>% sum()
+        score <- IRanges::Views( cov, start = start(zz), end = end(zz) ) %>% sum()
         tidyr::tibble(wig = Name,value = score,rowname = zz$name)
     }) %>% bind_rows()
 }
